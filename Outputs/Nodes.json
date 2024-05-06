@@ -1,0 +1,64 @@
+[
+    {
+        "Node": 1,
+        "Station": "LAX",
+        "Inbound": [
+            "RON_LAX"
+        ],
+        "Outbound": [
+            1,
+            3,
+            "y(1-2)"
+        ]
+    },
+    {
+        "Node": 2,
+        "Station": "LAX",
+        "Inbound": [
+            "y(1-2)",
+            5,
+            6
+        ],
+        "Outbound": [
+            "RON_LAX"
+        ]
+    },
+    {
+        "Node": 3,
+        "Station": "ORD",
+        "Inbound": [
+            "RON_ORD",
+            1
+        ],
+        "Outbound": [
+            2,
+            "y(3-4)"
+        ]
+    },
+    {
+        "Node": 4,
+        "Station": "ORD",
+        "Inbound": [
+            "y(3-4)",
+            4
+        ],
+        "Outbound": [
+            5,
+            "RON_ORD"
+        ]
+    },
+    {
+        "Node": 5,
+        "Station": "BOS",
+        "Inbound": [
+            "RON_BOS",
+            2,
+            3
+        ],
+        "Outbound": [
+            4,
+            6,
+            "RON_BOS"
+        ]
+    }
+]
