@@ -175,23 +175,24 @@ class FAM:
                                             # Construct Eqns (Matrices) #
     def  constraints_matrices(self):
         
-        # Coverage Vaiables
-        for flight in self.Flight_Schedule["flight number"]:
-            for fleet in range(self.Number_fleets):
-                self.Variables.append(f"X{flight}_{fleet+1}")
-                self.Dummy_variables.append(f"X{flight}_{fleet+1}")
+        if len(self.Variables) == 0:
+            # Coverage Vairables
+            for flight in self.Flight_Schedule["flight number"]:
+                for fleet in range(self.Number_fleets):
+                    self.Variables.append(f"X{flight}_{fleet+1}")
+                    self.Dummy_variables.append(f"X{flight}_{fleet+1}")
 
-        # Resources Variables
-        for fleet in range(self.Number_fleets):
-            for station in self.Stations:
-                self.Variables.append(f"RON_{station}_{fleet+1}")
-                self.RON_variables.append(f"RON_{station}_{fleet+1}")
-
-        # Balance (Interconnection) Variables
-        for g_link in self.ground_links:
+            # Resources Variables
             for fleet in range(self.Number_fleets):
-                self.Variables.append(f"{g_link}_{fleet+1}")
-                self.ground_link_variables.append(f"{g_link}_{fleet+1}")
+                for station in self.Stations:
+                    self.Variables.append(f"RON_{station}_{fleet+1}")
+                    self.RON_variables.append(f"RON_{station}_{fleet+1}")
+
+            # Balance (Interconnection) Variables
+            for g_link in self.ground_links:
+                for fleet in range(self.Number_fleets):
+                    self.Variables.append(f"{g_link}_{fleet+1}")
+                    self.ground_link_variables.append(f"{g_link}_{fleet+1}")
 
 
         # Coverage Matrix
@@ -207,7 +208,7 @@ class FAM:
             new_row.clear()
         
         self.coverage_matrix = self.coverage_matrix.fillna(0)
-        self.coverage_matrix.to_excel("Outputs/coverage_matrix.xlsx", engine="openpyxl")
+        self.coverage_matrix.to_excel(f"Outputs/{self.save_folder}/coverage_matrix_{self.save_folder}.xlsx", engine="openpyxl")
         self.coverage_rhs = np.ones(self.Number_Flights)
         self.coverage_bounds = [(0,1) for i in range(len(self.Dummy_variables))]  
         
@@ -231,7 +232,7 @@ class FAM:
             new_row.clear()
         
         self.resource_matrix = self.resource_matrix.fillna(0)
-        self.resource_matrix.to_excel("Outputs/resource_matrix.xlsx", engine="openpyxl")
+        self.resource_matrix.to_excel(f"Outputs/{self.save_folder}/resource_matrix_{self.save_folder}.xlsx", engine="openpyxl")
         
         
 
@@ -261,7 +262,7 @@ class FAM:
                 new_row.clear()
         
         self.Balance_matrix = self.Balance_matrix.fillna(0)
-        self.Balance_matrix.to_excel("Outputs/Balance_matrix.xlsx", engine="openpyxl")
+        self.Balance_matrix.to_excel(f"Outputs/{self.save_folder}/Balance_matrix_{self.save_folder}.xlsx", engine="openpyxl")
         self.Balance_rhs = np.zeros(len(self.Balance_matrix))
         self.Balnace_bounds = [(0,None) for i in self.ground_link_variables]
         
@@ -271,7 +272,7 @@ class FAM:
         
         # Constraint_Matrix
         self.constraints_matrix = pd.concat([self.coverage_matrix, self.Balance_matrix, self.resource_matrix], ignore_index = True).fillna(0)
-        self.constraints_matrix.to_excel("Outputs/FAM/constraints_FAM_matrix.xlsx", engine="openpyxl")
+        self.constraints_matrix.to_excel(f"Outputs/{self.save_folder}/constraints_matrix_{self.save_folder}.xlsx", engine="openpyxl")
 
     
                                              #  Profit Calaculation  #
@@ -287,7 +288,7 @@ class FAM:
                     row[f"X{flight+1}_{fleet+1}"] =  self.Flight_Schedule["Fare"][flight] * min(self.fleets["capacity"][fleet], self.Flight_Schedule["Demand"][flight]) - self.fleets["cost_per_mile"][fleet] * self.Flight_Schedule["Distance"][flight]
 
             self.profit_function = self.profit_function._append(row, ignore_index=True).fillna(0)
-            self.profit_function.to_excel("Outputs/FAM/profit_function.xlsx", engine="openpyxl")
+            self.profit_function.to_excel(f"Outputs/{self.save_folder}/profit_function_{self.save_folder}.xlsx", engine="openpyxl")
         
         # if sheet includes Itenary Based Fares with cost of flight given
         else :
@@ -324,7 +325,7 @@ class FAM:
         # Save and Display Solution Output
         self.output = pd.DataFrame(columns=self.Variables)
         self.output.loc[len(self.output)] = self.result.x
-        self.output.to_csv("Outputs/FAM/Optimization Results.csv")
+        self.output.to_csv(f"Outputs/{self.save_folder}/Optimization Results ({self.save_folder}).csv")
         self.Maximum_profit = -self.result.fun 
 
         print(f"Maximum Profit (FAM): {self.Maximum_profit}")
@@ -379,7 +380,8 @@ class FAM:
     
                                              #       Retuen Outputs      #                  
     def run_analysis_FAM(self):
-        
+
+        self.save_folder = "FAM"
         self.read_flight_schedule()
         self.read_fleets()
         self.read_Itenaries()
@@ -416,13 +418,16 @@ class iFAM(FAM):
         self.Number_of_Balance_Constraints = 0
         self.coverage_rhs = []
         self.flight_itenary_incidence_Matrix = pd.DataFrame()
+        self.spill_recapture_variables = []
         
-    
+        
+                             #       Calculate Demand (Change Demand from Itenary to Flight Based)     #  
     def Calculate_Unconstrained_Demand_Qf(self):
         self.Itenaries_var = [f"I{I_No+1}" for I_No in range(len(self.Itenaries))]
-        self.Flights_var = [f"{F_No+1}" for F_No in range(len(self.Flight_Schedule.index))]
+        self.Flights_var = [f"F{F_No+1}" for F_No in range(len(self.Flight_Schedule.index))]
         self.flight_itenary_incidence_Matrix = pd.DataFrame(columns = self.Itenaries_var)
         
+        # Flight Itenary Incidence Matrix
         new_row = {}
         for flight in self.Flight_Schedule["flight number"]:
             for Itenary in self.Itenaries.index:
@@ -431,10 +436,246 @@ class iFAM(FAM):
             self.flight_itenary_incidence_Matrix = self.flight_itenary_incidence_Matrix._append(new_row, ignore_index=True).fillna(0)
             new_row.clear()
 
+        self.flight_itenary_incidence_Matrix.index = self.Flights_var
+
         self.passenger_Demand = np.array(self.Itenaries["Passenger Demand"])
-        self.Calculate_Unconstrained_Demand_Qf = np.matmul(self.flight_itenary_incidence_Matrix.to_numpy() , self.passenger_Demand)
+        self.Unconstrained_Demand_Qf = np.matmul(self.flight_itenary_incidence_Matrix.to_numpy() , self.passenger_Demand)
+        self.Flight_Schedule["Demand"] = pd.Series(self.Unconstrained_Demand_Qf)
+        self.fleets_capacity = np.array(self.fleets["capacity"])
         
         
+        # SEAT_f Matrix
+        self.SEAT_matrix = pd.DataFrame(columns=self.Variables)
+        new_row = {}
+                
+        for flight in self.Flight_Schedule["flight number"]:
+            for fleet in range(self.Number_fleets):
+                new_row[f"X{flight}_{fleet+1}"] = self.fleets_capacity[fleet]
+            
+            
+            self.SEAT_matrix = self.SEAT_matrix._append(new_row, ignore_index=True)
+            new_row.clear()
+        
+        self.SEAT_matrix = self.SEAT_matrix.fillna(0)
+        self.SEAT_matrix.to_excel("Outputs/iFAM/SEAT_f_matrix.xlsx", engine="openpyxl")
+
+                                             #       Calculate Spilled and Recaptured Demands  #  
+    def spilled_recaptured_Demand_Calculation(self):
+        self.itenary_itenary_spill_recapture_Matrix = pd.DataFrame(columns = self.Itenaries_var)
+        self.itenary_itenary_spill_recapture_Matrix[f"I{len(self.Itenaries_var)+1}"] = ""
+        
+        new_row = {}
+
+        # Create Iteanry - Itenary Incidence Matrix
+        for itenary_1 in self.Itenaries.index:
+            ref_Itenary = list(self.Itenaries["Itenary"][itenary_1].split("-"))
+            for itenary_2 in range(len(self.Itenaries)+1):
+                    if itenary_2 < len(self.Itenaries):
+                        check_Itenary = list(self.Itenaries["Itenary"][itenary_2].split("-"))
+                        if  itenary_1 != itenary_2 and ref_Itenary[0] == check_Itenary[0] and ref_Itenary[-1] == check_Itenary[-1] and  len(ref_Itenary) <= 2:
+                            new_row[f"I{itenary_2 + 1}"] = f"t({itenary_1 + 1},{itenary_2 + 1})"
+                        else:
+                            new_row[f"I{len(self.Itenaries_var)+1}"] = f"t({itenary_1 + 1},{len(self.Itenaries_var)+1})"
+
+                        # Create Spill Recapture Variables t(p,r)
+                        self.spill_recapture_variables.append(f"t({itenary_1 + 1},{itenary_2 + 1})")
+                    else: 
+                        self.spill_recapture_variables.append(f"t({itenary_1 + 1},{itenary_2 + 1})")
+            
+            self.itenary_itenary_spill_recapture_Matrix = self.itenary_itenary_spill_recapture_Matrix._append(new_row, ignore_index=True).fillna(0)
+            new_row.clear()
+        
+        # spill recapture variables bounds
+        self.spill_recapture_variables_bounds = [(0,None) for i in self.spill_recapture_variables]
+        
+        ###############################################  Spilled Demand #########################################
+
+        # Take Summation of each Inteary row (symbolic)    
+        self.I_I_matrix_summation = pd.Series()
+        for Itenary in self.itenary_itenary_spill_recapture_Matrix.index:
+            new_list = self.itenary_itenary_spill_recapture_Matrix.iloc[Itenary]
+            row_sum  = [variable for variable in new_list if variable != 0]
+            row_sum = " + ".join(row_sum)
+
+            self.I_I_matrix_summation = self.I_I_matrix_summation._append(pd.Series(row_sum), ignore_index=True)
+        
+        
+        self.itenary_itenary_spill_recapture_Matrix.index = self.Itenaries_var
+        self.Variables.extend(self.spill_recapture_variables)
+        self.I_I_matrix_summation.index = self.Itenaries_var
+        
+        
+        # Multiply the Summation of t(p,r) to Flight - Itenary - Incidence Matrix
+        self.F_I_I_Matrix_symbolic = self.flight_itenary_incidence_Matrix.transpose()
+
+        for Itenary in self.F_I_I_Matrix_symbolic.index:
+            self.F_I_I_Matrix_symbolic.loc[Itenary] = self.F_I_I_Matrix_symbolic.loc[Itenary].replace(1, self.I_I_matrix_summation.loc[Itenary])
+        
+        self.F_I_I_Matrix_symbolic = self.F_I_I_Matrix_symbolic.transpose()
+        
+        
+        # Take Summation of each Flight row (symbolic)    
+        self.F_I_I_matrix_summation = pd.Series()
+        for Flight in self.F_I_I_Matrix_symbolic.index:
+            new_list = self.F_I_I_Matrix_symbolic.loc[Flight]
+            row_sum  = [variable for variable in new_list if variable != 0]
+            row_sum = " + ".join(row_sum)
+
+            self.F_I_I_matrix_summation = self.F_I_I_matrix_summation._append(pd.Series(row_sum), ignore_index=True)
+                
+        self.F_I_I_matrix_summation.index = self.Flights_var
+        
+        # Spilled Demand Matrix 
+        self.spilled_Demand_Matrix = pd.DataFrame(columns=self.Variables)
+        
+        new_row = {}
+        for Flight in self.F_I_I_matrix_summation.index:
+            elements = self.F_I_I_matrix_summation.loc[Flight].split(" + ")
+            for element in elements:
+                if element != 0 :
+                    new_row[f"{element}"] = 1
+                
+            
+            self.spilled_Demand_Matrix = self.spilled_Demand_Matrix._append(new_row, ignore_index = True).fillna(0)
+            new_row.clear()
+        
+        # check 
+        if self.Number_Flights == len(self.spilled_Demand_Matrix):
+            self.spilled_Demand_Matrix.to_excel(f"Outputs/{self.save_folder}/spilled_Demand_Matrix.xlsx", engine="openpyxl")
+        else : 
+            print("Dimensions Dosent Match")
+
+
+        ###############################################  Recapture Demand #########################################
+
+        # Take Summation of each Inteary Column (symbolic) 
+        self.I_I_matrix_recapture = self.itenary_itenary_spill_recapture_Matrix.iloc[:, :-1]
+        self.I_I_matrix_recapture_summation = pd.Series()
+        
+        for Itenary in self.I_I_matrix_recapture.columns:
+            new_list = self.itenary_itenary_spill_recapture_Matrix.loc[:, Itenary]
+            row_sum  = [variable for variable in new_list if variable != 0]
+            row_sum = " + ".join(row_sum)
+            
+            self.I_I_matrix_recapture_summation = self.I_I_matrix_recapture_summation._append(pd.Series(row_sum), ignore_index=True)
+
+        self.I_I_matrix_recapture_summation.index = self.Itenaries_var
+        self.F_I_I_Matrix_recapture_symbolic = self.flight_itenary_incidence_Matrix
+        
+        
+        # Multiply the Summation of t(p,r) to Flight - Itenary - Incidence Matrix
+        for Itenary in self.F_I_I_Matrix_recapture_symbolic.columns:
+            self.F_I_I_Matrix_recapture_symbolic.loc[:, Itenary] = self.F_I_I_Matrix_recapture_symbolic.loc[:, Itenary].replace(1, self.I_I_matrix_recapture_summation.loc[Itenary])
+            self.F_I_I_Matrix_recapture_symbolic = self.F_I_I_Matrix_recapture_symbolic.replace('',0)
+        
+        
+        
+        # Take Summation of each Flight row (symbolic) 
+        self.F_I_I_matrix_recapture_summation = pd.Series()
+        for Flight in self.F_I_I_Matrix_recapture_symbolic.index:
+            new_list = self.F_I_I_Matrix_recapture_symbolic.loc[Flight]
+            row_sum  = [variable for variable in new_list if variable != 0]
+            row_sum = " + ".join(row_sum)
+
+            self.F_I_I_matrix_recapture_summation = self.F_I_I_matrix_recapture_summation._append(pd.Series(row_sum), ignore_index=True)
+
+        self.F_I_I_matrix_recapture_summation = self.F_I_I_matrix_recapture_summation.replace('',0)      
+        self.F_I_I_matrix_recapture_summation.index = self.Flights_var
+
+        # Recapture Demand Matrix 
+        self.recapture_Demand_Matrix = pd.DataFrame(columns=self.Variables)
+        self.recapture_probability = pd.read_excel(self.excel_file, sheet_name="Recapture_Probability", index_col=None, engine="openpyxl")
+        self.recapture_probability["Variable_Equivalent"] = self.recapture_probability["Variable"].replace("b","t", regex=True)
+        
+        
+        
+        new_row = {}
+        for Flight in self.F_I_I_matrix_recapture_summation.index:
+            elements = str(self.F_I_I_matrix_recapture_summation.loc[Flight]).split(" + ")
+            for element in elements:
+                if element != "0":
+                    for probability in self.recapture_probability.index:
+                        if element == self.recapture_probability["Variable_Equivalent"][probability]:
+                            new_row[f"{element}"] = self.recapture_probability["Probability"][probability]
+                            
+                
+                else:
+                    new_row = pd.DataFrame(np.zeros((1, len(self.Variables))), columns = self.Variables)
+                    
+                    
+            
+            self.recapture_Demand_Matrix = self.recapture_Demand_Matrix._append(new_row, ignore_index = True).fillna(0)
+            new_row = {}
+        
+        # check 
+        if self.Number_Flights == len(self.recapture_Demand_Matrix):
+            self.recapture_Demand_Matrix.to_excel(f"Outputs/{self.save_folder}/recaptured_Demand_Matrix.xlsx", engine="openpyxl")
+        else : 
+            print("Dimensions Dosent Match")
+        
+                                            #   Create Flight Interaction Constraints Matrix  #  
+    def Flight_Interaction_constraints(self):
+        
+                        # Preform Calculations  
+        # (spill - recapture + Seat_f >= Qf)  multiply by negative
+        # (-spill + recapture - Seat_f <= -Qf)  multiply by negative
+
+        spill = self.spilled_Demand_Matrix.to_numpy()
+        recapture = self.recapture_Demand_Matrix.to_numpy()
+        Seat_f = self.SEAT_matrix.to_numpy()
+
+        self.Flight_Interaction_constraints_matrix = pd.DataFrame(-spill + recapture -Seat_f, columns=self.Variables)
+        self.Flight_Interaction_constraints_matrix.to_excel(f"Outputs/{self.save_folder}/Flight_Interaction_constraints_matrix_{self.save_folder}.xlsx", engine="openpyxl")
+        self.Flight_Interaction_constraints_rhs = - self.Unconstrained_Demand_Qf
+
+                                                #   Create Demand Constraints Matrix  # 
+    def Demand_constraints(self):
+        # Demand Constraint Matrix 
+        self.Demand_constraint_Matrix = pd.DataFrame(columns=self.Variables)
+        
+        new_row = {}
+        for Itenary in self.I_I_matrix_summation.index:
+            elements = self.I_I_matrix_summation.loc[Itenary].split(" + ")
+            for element in elements:
+                if element != '0' :
+                    new_row[f"{element}"] = 1
+                
+            
+            self.Demand_constraint_Matrix = self.Demand_constraint_Matrix._append(new_row, ignore_index = True).fillna(0)
+            new_row.clear()
+        
+        # check 
+        if self.Number_Itenaries == len(self.Demand_constraint_Matrix):
+            self.Demand_constraint_Matrix.to_excel(f"Outputs/{self.save_folder}/Demand_constraint_Matrix_{self.save_folder}.xlsx", engine="openpyxl")
+        else : 
+            print("Dimensions Dosent Match")
+
+        # Demand Constraint RHS
+        self.Demand_constraint_rhs = np.array(self.Itenaries["Passenger Demand"])
+
+                                                 #   Create Objective Function  # 
+    def Objective_Function(self):
+        
+        # Objective Function ----> Minimizing C+(S-M)
+        self.Objective_Function = pd.DataFrame(columns=self.Variables)
+
+        # Operating Cost (C)
+        self.Operating_Cost = pd.DataFrame(columns=self.Variables)
+
+        new_row = {}
+        for flight in self.Flight_Schedule.index:
+            for fleet in self.fleets.index:
+                new_row[f"X{flight+1}_{fleet+1}"] = self.Flight_Schedule[f"e{fleet+1}"][flight]
+
+        self.Operating_Cost = self.Operating_Cost._append(new_row, ignore_index = True)
+        
+        
+
+
+    
+        
+
+
 
 
 
@@ -448,6 +689,7 @@ class iFAM(FAM):
     
     def run_analysis_iFAM(self):
 
+        self.save_folder = "iFAM"
         self.read_flight_schedule()
         self.read_fleets()
         self.read_Itenaries()
@@ -455,6 +697,12 @@ class iFAM(FAM):
         self.create_nodes()
         self.constraints_matrices()
         self.Calculate_Unconstrained_Demand_Qf()
+        self.spilled_recaptured_Demand_Calculation()
+        self.constraints_matrices()
+        self.Calculate_Unconstrained_Demand_Qf()
+        self.Flight_Interaction_constraints()
+        self.Demand_constraints()
+        self.Objective_Function()
         # self.optimize_iFAM()
     
         
