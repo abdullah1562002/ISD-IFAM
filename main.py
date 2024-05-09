@@ -1,8 +1,10 @@
 import FAM
 import pandas as pd
+import warnings
 
+# Ignore all future warnings (Related to Syntax Updates)
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
-pd.set_option('future.no_silent_downcasting', True)
 
 # Create an instance of the class
 analyzer_FAM = FAM.FAM("ISD_Project_Data.xlsx")

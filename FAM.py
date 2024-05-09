@@ -667,9 +667,48 @@ class iFAM(FAM):
             for fleet in self.fleets.index:
                 new_row[f"X{flight+1}_{fleet+1}"] = self.Flight_Schedule[f"e{fleet+1}"][flight]
 
-        self.Operating_Cost = self.Operating_Cost._append(new_row, ignore_index = True)
+        self.Operating_Cost = self.Operating_Cost._append(new_row, ignore_index = True).fillna(0)
+
+        # Spilled Cost/Revenue (S)
+        self.Spilled_Cost = pd.DataFrame(columns=self.Variables)
+
+        new_row = {}
+        counter = 0
+        for Itenary in self.I_I_matrix_summation:
+            elements = Itenary.split(" + ")
+            for element in elements:
+                if element != '0':
+                    new_row[element] = self.Itenaries["Fare"][counter]
+            
+            counter += 1
+
+        self.Spilled_Cost = self.Spilled_Cost._append(new_row, ignore_index = True).fillna(0)
+        # self.Spilled_Cost.to_excel(f"Outputs/{self.save_folder}/Spilled_Cost_{self.save_folder}.xlsx", engine="openpyxl")
         
+
+        # Recaptured Cost/Revenue (M)
+        self.Recaptured_Cost = pd.DataFrame(columns=self.Variables)
+
+        new_row = {}
+        counter = 0
+        for Itenary in self.I_I_matrix_recapture_summation:
+            elements = Itenary.split(" + ")
+            for element in elements:
+                if element != "0":
+                    for probability in self.recapture_probability.index:
+                        if element == self.recapture_probability["Variable_Equivalent"][probability]:
+                            new_row[f"{element}"] = self.recapture_probability["Probability"][probability] * self.Itenaries["Fare"][counter]
         
+            counter += 1
+
+        self.Recaptured_Cost = self.Recaptured_Cost._append(new_row, ignore_index = True).fillna(0)
+        # self.Recaptured_Cost.to_excel(f"Outputs/{self.save_folder}/Recaptured_Cost_{self.save_folder}.xlsx", engine="openpyxl")
+
+        # Append To Obective Function
+        self.Objective_Function = self.Operating_Cost + (self.Spilled_Cost - self.Recaptured_Cost)
+        self.Objective_Function.to_excel(f"Outputs/{self.save_folder}/Objective_Function_{self.save_folder}.xlsx", engine="openpyxl")
+        
+
 
 
     
