@@ -231,6 +231,7 @@ class FAM:
             self.resource_rhs.append(self.fleets["size"][fleet])
             new_row.clear()
         
+        self.resource_rhs = np.array(self.resource_rhs)
         self.resource_matrix = self.resource_matrix.fillna(0)
         self.resource_matrix.to_excel(f"Outputs/{self.save_folder}/resource_matrix_{self.save_folder}.xlsx", engine="openpyxl")
         
@@ -328,7 +329,10 @@ class FAM:
         self.output.to_csv(f"Outputs/{self.save_folder}/Optimization Results ({self.save_folder}).csv")
         self.Maximum_profit = -self.result.fun 
 
-        print(f"Maximum Profit (FAM): {self.Maximum_profit}")
+        print("##################################################")
+        print("##                      FAM                     ##")
+        print("##################################################")
+        print(f"Maximum Profit (FAM): {self.Maximum_profit}\n")
         
 
     
@@ -626,7 +630,7 @@ class iFAM(FAM):
 
         self.Flight_Interaction_constraints_matrix = pd.DataFrame(-spill + recapture -Seat_f, columns=self.Variables)
         self.Flight_Interaction_constraints_matrix.to_excel(f"Outputs/{self.save_folder}/Flight_Interaction_constraints_matrix_{self.save_folder}.xlsx", engine="openpyxl")
-        self.Flight_Interaction_constraints_rhs = - self.Unconstrained_Demand_Qf
+        self.Flight_Interaction_constraints_rhs = np.array(-self.Unconstrained_Demand_Qf)
 
                                                 #   Create Demand Constraints Matrix  # 
     def Demand_constraints(self):
@@ -708,23 +712,57 @@ class iFAM(FAM):
         self.Objective_Function = self.Operating_Cost + (self.Spilled_Cost - self.Recaptured_Cost)
         self.Objective_Function.to_excel(f"Outputs/{self.save_folder}/Objective_Function_{self.save_folder}.xlsx", engine="openpyxl")
         
+                                             #      Optimization     #
+    def optimize_iFAM(self):
+        
+        objective_function = self.Objective_Function.to_numpy()
+        inequality_constraints = pd.concat([self.resource_matrix, self.Flight_Interaction_constraints_matrix, self.Demand_constraint_Matrix], ignore_index=True).to_numpy()
+        equality_constraints = pd.concat([self.coverage_matrix, self.Balance_matrix], ignore_index=True).to_numpy()
+        inequality_rhs = np.concatenate((self.resource_rhs, self.Flight_Interaction_constraints_rhs, self.Demand_constraint_rhs))
+        equality_rhs = np.concatenate((self.coverage_rhs, self.Balance_rhs))
+        bounds = []
+        bounds.extend(self.coverage_bounds)
+        bounds.extend(self.resource_bounds)
+        bounds.extend(self.Balnace_bounds)
+        bounds.extend(self.spill_recapture_variables_bounds)
+        
+        # using scipy linprog to optimize
+        self.result = linprog(objective_function,
+                         A_ub = inequality_constraints,
+                         b_ub = inequality_rhs,
+                         A_eq = equality_constraints,
+                         b_eq = equality_rhs,
+                         bounds = bounds,                            
+        )
 
-
-
+        # Calculate Unconstrained Revenue
     
+        counter = 0
+        self.Flight_Schedule["Fare"] = 0
+        for flight_Demand in self.Unconstrained_Demand_Qf:
+            self.Flight_Schedule.loc[counter, "Fare"] = self.Itenaries.loc[counter, "Fare"]
+            counter += 1
+
+        self.Unconstrained_Revenue = 0
+        for flight in self.Flight_Schedule.index:
+            self.Unconstrained_Revenue += self.Flight_Schedule["Fare"][flight] * self.Flight_Schedule["Demand"][flight]
         
 
 
+        # Save and Display Solution Output
+        self.output = pd.DataFrame(columns=self.Variables)
+        self.output.loc[len(self.output)] = self.result.x
+        self.output.to_csv(f"Outputs/{self.save_folder}/Optimization Results ({self.save_folder}).csv")
+        self.Minimum_Cost = self.result.fun 
+        self.Maximum_profit = self.Unconstrained_Revenue - self.Minimum_Cost  
 
+        print("##################################################")
+        print("##                     iFAM                     ##")
+        print("##################################################")
+        print(f"Minimum Cost    (iFAM): {self.Minimum_Cost}")
+        print(f"Maximum Profit  (iFAM): {self.Maximum_profit}\n")
+        
 
-
-
-    
-    
-    
-    
-    
-    
     
     def run_analysis_iFAM(self):
 
@@ -742,6 +780,6 @@ class iFAM(FAM):
         self.Flight_Interaction_constraints()
         self.Demand_constraints()
         self.Objective_Function()
-        # self.optimize_iFAM()
+        self.optimize_iFAM()
     
         
