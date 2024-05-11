@@ -16,11 +16,12 @@
 # FFFFFFFFFFF  AAAAAAA                   AAAAAAAMMMMMMMM               MMMMMMMM
 
 import pandas as pd
-# import pyomo.environ as pe
-# import pyomo.opt as po
+import pyomo.environ as pe
+import pyomo.opt as po
 from scipy.optimize import linprog
 import numpy as np
 import json
+import openpyxl
 
 
 class FAM:
@@ -46,9 +47,13 @@ class FAM:
         self.Number_of_Resource_Constraints = 0
         self.Number_of_Balance_Constraints = 0
         self.coverage_rhs = []
+        self.inequality_constraints = pd.DataFrame()
+        self.equality_constraints = pd.DataFrame()
+        self.inequality_rhs = np.array([])
+        self.equality_rhs = np.array([])
         
 
-                                                    # Read Flight Secdule #
+                                                    #  Read Flight Secdule #
     def read_flight_schedule(self):
         self.Flight_Schedule = pd.DataFrame(pd.read_excel(self.excel_file, sheet_name="Flights", index_col=None, engine="openpyxl"))
         self.Number_Flights = len(self.Flight_Schedule)
@@ -62,7 +67,6 @@ class FAM:
     def read_Itenaries(self):
         self.Itenaries = pd.DataFrame(pd.read_excel(self.excel_file, sheet_name="Itenaries", index_col=None, engine="openpyxl"))
         self.Number_Itenaries = len(self.Itenaries)
-        
         
         
                                                     #  Identify Stations  #
@@ -145,8 +149,7 @@ class FAM:
 
             self.Nodes.append(new_node)
             self.Number_of_Nodes = len(self.Nodes)
-
-                                            
+        
                                                 #   Create Ground Links   #
     
         for Station in self.Stations:
@@ -194,7 +197,6 @@ class FAM:
                     self.Variables.append(f"{g_link}_{fleet+1}")
                     self.ground_link_variables.append(f"{g_link}_{fleet+1}")
 
-
         # Coverage Matrix
         self.coverage_matrix = pd.DataFrame(columns=self.Variables)
         new_row = {}
@@ -211,8 +213,6 @@ class FAM:
         self.coverage_matrix.to_excel(f"Outputs/{self.save_folder}/coverage_matrix_{self.save_folder}.xlsx", engine="openpyxl")
         self.coverage_rhs = np.ones(self.Number_Flights)
         self.coverage_bounds = [(0,1) for i in range(len(self.Dummy_variables))]  
-        
-        
 
         # Resource Matrix
         self.resource_matrix = pd.DataFrame(columns=self.Variables)
@@ -234,10 +234,8 @@ class FAM:
         self.resource_rhs = np.array(self.resource_rhs)
         self.resource_matrix = self.resource_matrix.fillna(0)
         self.resource_matrix.to_excel(f"Outputs/{self.save_folder}/resource_matrix_{self.save_folder}.xlsx", engine="openpyxl")
-        
-        
 
-        
+
         # Balance (Interconnection) Matrix
         self.Balance_matrix = pd.DataFrame(columns=self.Variables)
         new_row = {}
@@ -267,15 +265,6 @@ class FAM:
         self.Balance_rhs = np.zeros(len(self.Balance_matrix))
         self.Balnace_bounds = [(0,None) for i in self.ground_link_variables]
         
-        # Equality Matrix
-        self.coverage_Balance_matrix = pd.concat([self.coverage_matrix, self.Balance_matrix], ignore_index = True)
-        self.coverage_Balance_rhs = np.append(self.coverage_rhs, self.Balance_rhs)
-        
-        # Constraint_Matrix
-        self.constraints_matrix = pd.concat([self.coverage_matrix, self.Balance_matrix, self.resource_matrix], ignore_index = True).fillna(0)
-        self.constraints_matrix.to_excel(f"Outputs/{self.save_folder}/constraints_matrix_{self.save_folder}.xlsx", engine="openpyxl")
-
-    
                                              #  Profit Calaculation  #
     def  profit_calculation(self):
         
@@ -300,19 +289,60 @@ class FAM:
             self.profit_function = self.profit_function._append(row, ignore_index=True).fillna(0)
             self.profit_function.to_excel("Outputs/FAM/profit_function.xlsx", engine="openpyxl")
 
+                                             #  Create FAM Constraints  #
+    def Create_FAM_constraints(self):
+        # -------------> Append Coverage Constraints To Equality Matrix & to Equality RHS
+        self.equality_constraints = pd.concat([self.equality_constraints, self.coverage_matrix],ignore_index=True)
+        self.equality_rhs = np.concatenate((self.equality_rhs, self.coverage_rhs))
+
+        # -------------> Append Balance Constraints To Equality Matrix & to Equality RHS
+        self.equality_constraints = pd.concat([self.equality_constraints, self.Balance_matrix],ignore_index=True)
+        self.equality_rhs = np.concatenate((self.equality_rhs, self.Balance_rhs))
+
+         # -------------> Append Resource Constraints To Inequality Matrix & to Inequality RHS
+        self.inequality_constraints = pd.concat([self.inequality_constraints, self.resource_matrix],ignore_index=True)
+        self.inequality_rhs = np.concatenate((self.inequality_rhs, self.resource_rhs))
+
+
+                                             #  Check Optional Flights and Update Constraints  #
+    def check_optional_flights(self):
+        workbook = openpyxl.load_workbook(self.excel_file)
+        sheet_name = "Optional_Flights"
+        if sheet_name in workbook.sheetnames:
+            self.Optional_Flights = pd.read_excel(self.excel_file, sheet_name=sheet_name, index_col=None, engine="openpyxl")
+            if len(self.Optional_Flights) != 0:
+                self.indices_to_remove = []
+                for Flight in self.Optional_Flights["flight number"]:
+                    self.indices_to_remove.append(Flight-1)
+                    new_inequality_constraint = self.coverage_matrix.iloc[Flight-1]
+                    new_inequality_rhs = self.coverage_rhs[Flight-1]
+                    self.inequality_constraints = self.inequality_constraints._append(new_inequality_constraint, ignore_index=True)
+                    self.inequality_rhs = np.append(self.inequality_rhs, new_inequality_rhs)
+                
+                self.equality_constraints = self.equality_constraints.drop(self.indices_to_remove)
+                self.equality_rhs = np.delete(self.equality_rhs, self.indices_to_remove)
+                
+
+            else:
+                return 0
+        
+        else: 
+            return 0
+
 
                                              #      Optimization     #
     def optimize_FAM(self):
         
         objective_function = self.profit_function.to_numpy()
-        inequality_constraints = self.resource_matrix.to_numpy()
-        equality_constraints = self.coverage_Balance_matrix.to_numpy()
-        inequality_rhs = self.resource_rhs
-        equality_rhs = self.coverage_Balance_rhs
+        inequality_constraints = self.inequality_constraints.to_numpy()
+        equality_constraints = self.equality_constraints.to_numpy()
+        inequality_rhs = self.inequality_rhs
+        equality_rhs = self.equality_rhs
         bounds = []
         bounds.extend(self.coverage_bounds)
         bounds.extend(self.resource_bounds)
         bounds.extend(self.Balnace_bounds)
+        
         
         # using scipy linprog to optimize
         self.result = linprog(-objective_function,
@@ -320,7 +350,8 @@ class FAM:
                          b_ub = inequality_rhs,
                          A_eq = equality_constraints,
                          b_eq = equality_rhs,
-                         bounds = bounds,                            
+                         bounds = bounds,
+                                                    
         )
 
         # Save and Display Solution Output
@@ -337,49 +368,112 @@ class FAM:
 
     
                                              #      Optimization (Pyomo)     # 
-                                             #        Future Upgrade         #
-    # def optimize_pyomo(self):
+    def optimize_FAM_pyomo(self):
 
-    #     model = pe.ConcreteModel()
+        model = pe.ConcreteModel()
  
-    #     model.x = pe.Var(self.Dummy_variables, within = pe.Binary)
-    #     model.RON = pe.Var(self.RON_variables, within = pe.NonNegativeIntegers)
-    #     model.ground_links = pe.Var(self.ground_link_variables, within = pe.NonNegativeIntegers)
+        model.x = pe.Var(self.Dummy_variables, within = pe.Binary)
+        model.RON = pe.Var(self.RON_variables, within = pe.NonNegativeIntegers)
+        model.y = pe.Var(self.ground_link_variables, within = pe.NonNegativeIntegers)
 
-    #     # Coverage Constraints 
-    #     model.coverage_constraints = pe.ConstraintList()
-    #     for flight in self.Flight_Schedule["flight number"]:
-    #         coverage_sum = sum([model.x[f"X{flight}_{fleet+1}"] for fleet in range(self.Number_fleets)]) 
-    #         model.coverage_constraints.add(coverage_sum == 1)
         
-    #     # Resource Constraints
-    #     model.resource_constraints = pe.ConstraintList()
-    #     for fleet in range(self.Number_fleets):
-    #         resource_sum = sum([model.RON[f"RON_{station}_{fleet+1}"] for station in self.Stations])
-    #         model.resource_constraints.add(resource_sum == self.fleets["size"][fleet])
+        # Coverage Constraints 
+        model.coverage_constraints = pe.ConstraintList()
+        for flight in self.Flight_Schedule["flight number"]:
+            coverage_sum = sum([model.x[f"X{flight}_{fleet+1}"] for fleet in range(self.Number_fleets)]) 
+            if flight in self.Optional_Flights["flight number"].to_list():
+                model.coverage_constraints.add(coverage_sum <= 1)
+            else:
+                model.coverage_constraints.add(coverage_sum == 1)
         
-    #     # Balance Constraints
-    #     model.balance_constraints = pe.ConstraintList()
+        # Resource Constraints
+        model.resource_constraints = pe.ConstraintList()
+        for fleet in range(self.Number_fleets):
+            resource_sum = sum([model.RON[f"RON_{station}_{fleet+1}"] for station in self.Stations])
+            model.resource_constraints.add(resource_sum <= self.fleets["size"][fleet])
         
-    #     new_row = {}
-    #     for node in range(self.Number_of_Nodes):
-    #         for fleet in range(self.Number_fleets):
+        # Balance Constraints
+        model.balance_constraints = pe.ConstraintList()
+        
+        new_x = {}
+        new_ron = {}
+        new_y = {}
+        for node in range(self.Number_of_Nodes):
+            for fleet in range(self.Number_fleets):
+                #Inbounds
+                for In in self.Nodes[node]["Inbound"]: 
+                    if type(In) is str:
+                        if In[0] == "R":
+                            new_ron[f"{In}_{fleet+1}"] = 1
+                        else: 
+                            new_y[f"{In}_{fleet+1}"] = 1
+                    else:
+                        new_x[f"X{In}_{fleet+1}"] = 1
+                #Outbounds
+                for Out in self.Nodes[node]["Outbound"]: 
+                    if type(Out) is str:
+                        if Out[0] == "R":
+                            new_ron[f"{Out}_{fleet+1}"] = -1
+                        else: 
+                            new_y[f"{Out}_{fleet+1}"] = -1
+                    else:
+                        new_x[f"X{Out}_{fleet+1}"] = -1
                 
-    #             #Inbounds
-    #             for In in self.Nodes[node]["Inbound"]: 
-    #                 if type(In) is str:
-    #                     new_row[f"{In}_{fleet+1}"] = 1
-    #                 else:
-    #                     new_row[f"X{In}_{fleet+1}"] = 1
-    #             #Outbounds
-    #             for Out in self.Nodes[node]["Outbound"]: 
-    #                 if type(Out) is str:
-    #                     new_row[f"{Out}_{fleet+1}"] = -1
-    #                 else:
-    #                     new_row[f"X{Out}_{fleet+1}"] = -1
+                
+                # Constraints
+                flight_sum = sum(model.x[f"{key}"]*value for key, value in new_x.items())
+                Ron_sum = sum(model.RON[f"{key}"]*value for key, value in new_ron.items())
+                y_sum = sum(model.y[f"{key}"]*value for key, value in new_y.items())
+                balance_sum = sum([flight_sum, Ron_sum, y_sum])
 
-                
-    #     model.pprint()
+                model.balance_constraints.add(expr= balance_sum == 0)
+
+                new_x.clear()
+                new_ron.clear()
+                new_y.clear()
+
+        # Objective_Function
+        
+        row = {}
+        # if sheet includes flight based Fares with cost/mile given
+        if 'Fare' in self.Flight_Schedule.columns:
+            for flight in self.Flight_Schedule.index:
+                for fleet in range(self.Number_fleets):
+                    row[f"X{flight+1}_{fleet+1}"] =  self.Flight_Schedule["Fare"][flight] * min(self.fleets["capacity"][fleet], self.Flight_Schedule["Demand"][flight]) - self.fleets["cost_per_mile"][fleet] * self.Flight_Schedule["Distance"][flight]
+
+            self.profit_function = self.profit_function._append(row, ignore_index=True).fillna(0)
+            self.profit_function.to_excel(f"Outputs/{self.save_folder}/profit_function_{self.save_folder}.xlsx", engine="openpyxl")
+        
+        # if sheet includes Itenary Based Fares with cost of flight given
+        else :
+            for flight in self.Flight_Schedule.index:
+                for fleet in range(self.Number_fleets):
+                    row[f"X{flight+1}_{fleet+1}"] =  self.Itenaries["Fare"][flight] * min(self.fleets["capacity"][fleet], self.Itenaries["Passenger Demand"][flight]) -  self.Flight_Schedule[f"e{fleet+1}"][flight]
+
+
+        objective_fun = sum(model.x[f"{key}"]*value for key, value in row.items())
+
+        model.objective = pe.Objective(sense = pe.maximize, expr = objective_fun)
+
+
+        solver = po.SolverFactory("gurobi")     
+        results = solver.solve(model, tee=False)
+
+        print("##################################################")
+        print("##                      FAM                     ##")
+        print("##################################################")
+        print(f"Maxium Profit (FAM) : {pe.value(model.objective)}")
+
+        for var in self.Dummy_variables:
+            print(f"{var} : {pe.value(model.x[f"{var}"])}")
+
+        for var in self.RON_variables:
+            print(f"{var} : {pe.value(model.RON[f"{var}"])}")
+
+        for var in self.ground_link_variables:
+            print(f"{var} : {pe.value(model.y[f"{var}"])}")
+        
+        # model.pprint()
     
     
                                              #       Retuen Outputs      #                  
@@ -393,10 +487,13 @@ class FAM:
         self.create_nodes()
         self.constraints_matrices()
         self.profit_calculation()
-        self.optimize_FAM()
-
+        self.Create_FAM_constraints()
+        self.check_optional_flights()
+        self.optimize_FAM_pyomo()
         
-    
+
+
+
 
 class iFAM(FAM):
     def __init__(self, excel_file):
@@ -423,9 +520,18 @@ class iFAM(FAM):
         self.coverage_rhs = []
         self.flight_itenary_incidence_Matrix = pd.DataFrame()
         self.spill_recapture_variables = []
+        self.inequality_constraints = pd.DataFrame()
+        self.equality_constraints = pd.DataFrame()
+        self.inequality_rhs = np.array([])
+        self.equality_rhs = np.array([])
         
         
-                             #       Calculate Demand (Change Demand from Itenary to Flight Based)     #  
+    def read_probability(self):
+        self.recapture_probability = pd.read_excel(self.excel_file, sheet_name="Recapture_Probability", index_col=None, engine="openpyxl")
+        self.recapture_probability["Variable_Equivalent"] = self.recapture_probability["Variable"].replace("b","t", regex=True)
+        
+        
+                             # ------------------ Calculate Demand (Change Demand from Itenary to Flight Based) ------------------ #  
     def Calculate_Unconstrained_Demand_Qf(self):
         self.Itenaries_var = [f"I{I_No+1}" for I_No in range(len(self.Itenaries))]
         self.Flights_var = [f"F{F_No+1}" for F_No in range(len(self.Flight_Schedule.index))]
@@ -555,13 +661,26 @@ class iFAM(FAM):
         # Take Summation of each Inteary Column (symbolic) 
         self.I_I_matrix_recapture = self.itenary_itenary_spill_recapture_Matrix.iloc[:, :-1]
         self.I_I_matrix_recapture_summation = pd.Series()
-        
+        self.I_I_matrix_recapture_summation_probability = pd.Series()
+
         for Itenary in self.I_I_matrix_recapture.columns:
             new_list = self.itenary_itenary_spill_recapture_Matrix.loc[:, Itenary]
             row_sum  = [variable for variable in new_list if variable != 0]
+            row_probability = []
+
+            if len(row_sum) != 0:
+                for element in row_sum:
+                    for variable in self.recapture_probability.index:
+                        if element == self.recapture_probability.loc[variable, "Variable_Equivalent"]:
+                            row_probability.append(self.recapture_probability.loc[variable, "Probability"])
+
+            else:
+                row_probability.append(0)
+            
             row_sum = " + ".join(row_sum)
             
             self.I_I_matrix_recapture_summation = self.I_I_matrix_recapture_summation._append(pd.Series(row_sum), ignore_index=True)
+            self.I_I_matrix_recapture_summation_probability = self.I_I_matrix_recapture_summation_probability._append(pd.Series(row_probability), ignore_index =True)
 
         self.I_I_matrix_recapture_summation.index = self.Itenaries_var
         self.F_I_I_Matrix_recapture_symbolic = self.flight_itenary_incidence_Matrix
@@ -576,22 +695,32 @@ class iFAM(FAM):
         
         # Take Summation of each Flight row (symbolic) 
         self.F_I_I_matrix_recapture_summation = pd.Series()
+        self.F_I_I_matrix_recapture_summation_probability = pd.Series()
         for Flight in self.F_I_I_Matrix_recapture_symbolic.index:
             new_list = self.F_I_I_Matrix_recapture_symbolic.loc[Flight]
             row_sum  = [variable for variable in new_list if variable != 0]
+            row_probability = []
+
+            if len(row_sum) != 0:
+                for element in row_sum:
+                    for variable in self.recapture_probability.index:
+                        if element == self.recapture_probability.loc[variable, "Variable_Equivalent"]:
+                            row_probability.append(self.recapture_probability.loc[variable, "Probability"])
+
+            else:
+                row_probability.append(0)
+            
             row_sum = " + ".join(row_sum)
 
             self.F_I_I_matrix_recapture_summation = self.F_I_I_matrix_recapture_summation._append(pd.Series(row_sum), ignore_index=True)
+            self.F_I_I_matrix_recapture_summation_probability = self.F_I_I_matrix_recapture_summation_probability._append(pd.Series(row_probability), ignore_index=True)
 
-        self.F_I_I_matrix_recapture_summation = self.F_I_I_matrix_recapture_summation.replace('',0)      
+        self.F_I_I_matrix_recapture_summation = self.F_I_I_matrix_recapture_summation.replace('',0)     
         self.F_I_I_matrix_recapture_summation.index = self.Flights_var
 
+        
         # Recapture Demand Matrix 
         self.recapture_Demand_Matrix = pd.DataFrame(columns=self.Variables)
-        self.recapture_probability = pd.read_excel(self.excel_file, sheet_name="Recapture_Probability", index_col=None, engine="openpyxl")
-        self.recapture_probability["Variable_Equivalent"] = self.recapture_probability["Variable"].replace("b","t", regex=True)
-        
-        
         
         new_row = {}
         for Flight in self.F_I_I_matrix_recapture_summation.index:
@@ -606,8 +735,6 @@ class iFAM(FAM):
                 else:
                     new_row = pd.DataFrame(np.zeros((1, len(self.Variables))), columns = self.Variables)
                     
-                    
-            
             self.recapture_Demand_Matrix = self.recapture_Demand_Matrix._append(new_row, ignore_index = True).fillna(0)
             new_row = {}
         
@@ -712,14 +839,26 @@ class iFAM(FAM):
         self.Objective_Function = self.Operating_Cost + (self.Spilled_Cost - self.Recaptured_Cost)
         self.Objective_Function.to_excel(f"Outputs/{self.save_folder}/Objective_Function_{self.save_folder}.xlsx", engine="openpyxl")
         
+
+                                             #  Create FAM Constraints  #
+    def Create_iFAM_constraints(self):
+
+         # -------------> Append Flight Interaction Constraints To Inequality Matrix & to Inequality RHS
+        self.inequality_constraints = pd.concat([self.inequality_constraints, self.Flight_Interaction_constraints_matrix],ignore_index=True)
+        self.inequality_rhs = np.concatenate((self.inequality_rhs, self.Flight_Interaction_constraints_rhs))
+
+         # -------------> Append Demand Constraints To Inequality Matrix & to Inequality RHS
+        self.inequality_constraints = pd.concat([self.inequality_constraints, self.Demand_constraint_Matrix],ignore_index=True)
+        self.inequality_rhs = np.concatenate((self.inequality_rhs, self.Demand_constraint_rhs))
+
                                              #      Optimization     #
     def optimize_iFAM(self):
         
         objective_function = self.Objective_Function.to_numpy()
-        inequality_constraints = pd.concat([self.resource_matrix, self.Flight_Interaction_constraints_matrix, self.Demand_constraint_Matrix], ignore_index=True).to_numpy()
-        equality_constraints = pd.concat([self.coverage_matrix, self.Balance_matrix], ignore_index=True).to_numpy()
-        inequality_rhs = np.concatenate((self.resource_rhs, self.Flight_Interaction_constraints_rhs, self.Demand_constraint_rhs))
-        equality_rhs = np.concatenate((self.coverage_rhs, self.Balance_rhs))
+        inequality_constraints = self.inequality_constraints.to_numpy()
+        equality_constraints = self.equality_constraints.to_numpy()
+        inequality_rhs = self.inequality_rhs
+        equality_rhs = self.equality_rhs
         bounds = []
         bounds.extend(self.coverage_bounds)
         bounds.extend(self.resource_bounds)
@@ -732,7 +871,8 @@ class iFAM(FAM):
                          b_ub = inequality_rhs,
                          A_eq = equality_constraints,
                          b_eq = equality_rhs,
-                         bounds = bounds,                            
+                         bounds = bounds, 
+                              
         )
 
         # Calculate Unconstrained Revenue
@@ -761,15 +901,187 @@ class iFAM(FAM):
         print("##################################################")
         print(f"Minimum Cost    (iFAM): {self.Minimum_Cost}")
         print(f"Maximum Profit  (iFAM): {self.Maximum_profit}\n")
-        
 
     
+                                              # -------------------------     Optimization (Pyomo)   ------------------------- # 
+    def optimize_iFAM_pyomo(self):
+
+        model = pe.ConcreteModel()
+ 
+        model.x = pe.Var(self.Dummy_variables, within = pe.Binary)
+        model.RON = pe.Var(self.RON_variables, within = pe.NonNegativeIntegers)
+        model.y = pe.Var(self.ground_link_variables, within = pe.NonNegativeIntegers)
+        model.t = pe.Var(self.spill_recapture_variables, within = pe.NonNegativeIntegers)
+
+
+        # Coverage Constraints 
+        model.coverage_constraints = pe.ConstraintList()
+        for flight in self.Flight_Schedule["flight number"]:
+            coverage_sum = sum([model.x[f"X{flight}_{fleet+1}"] for fleet in range(self.Number_fleets)]) 
+            if flight in self.Optional_Flights["flight number"].to_list():
+                model.coverage_constraints.add(coverage_sum <= 1)
+            else:
+                model.coverage_constraints.add(coverage_sum == 1)
+        
+        # Resource Constraints
+        model.resource_constraints = pe.ConstraintList()
+        for fleet in range(self.Number_fleets):
+            resource_sum = sum([model.RON[f"RON_{station}_{fleet+1}"] for station in self.Stations])
+            model.resource_constraints.add(resource_sum <= self.fleets["size"][fleet])
+        
+        # Balance Constraints
+        model.balance_constraints = pe.ConstraintList()
+        
+        new_x = {}
+        new_ron = {}
+        new_y = {}
+        for node in range(self.Number_of_Nodes):
+            for fleet in range(self.Number_fleets):
+                #Inbounds
+                for In in self.Nodes[node]["Inbound"]: 
+                    if type(In) is str:
+                        if In[0] == "R":
+                            new_ron[f"{In}_{fleet+1}"] = 1
+                        else: 
+                            new_y[f"{In}_{fleet+1}"] = 1
+                    else:
+                        new_x[f"X{In}_{fleet+1}"] = 1
+                #Outbounds
+                for Out in self.Nodes[node]["Outbound"]: 
+                    if type(Out) is str:
+                        if Out[0] == "R":
+                            new_ron[f"{Out}_{fleet+1}"] = -1
+                        else: 
+                            new_y[f"{Out}_{fleet+1}"] = -1
+                    else:
+                        new_x[f"X{Out}_{fleet+1}"] = -1
+                
+                
+                # Sum all Variables in balance Constraints
+                flight_sum = sum(model.x[f"{key}"]*value for key, value in new_x.items())
+                Ron_sum = sum(model.RON[f"{key}"]*value for key, value in new_ron.items())
+                y_sum = sum(model.y[f"{key}"]*value for key, value in new_y.items())
+                balance_sum = sum([flight_sum, Ron_sum, y_sum])
+
+                model.balance_constraints.add(expr= balance_sum == 0)
+
+                new_x.clear()
+                new_ron.clear()
+                new_y.clear()
+        
+        # Spill-Recapture Demand Constraints
+        model.spill_recapture_Demand_constraints = pe.ConstraintList() 
+        counter = 0
+        for Itenary in self.I_I_matrix_summation.index:
+            spill_recapture_Demand_constraints = sum(model.t[f"{var}"] for var in self.I_I_matrix_summation.loc[Itenary].split(" + "))
+            model.spill_recapture_Demand_constraints.add(expr= spill_recapture_Demand_constraints <= self.Itenaries.loc[counter,"Passenger Demand"] )
+            counter += 1
+
+        # Flight Interaction Constrainst
+        
+                                                                    # Preform Calculations  
+                                                    # (spill - recapture + Seat_f >= Qf)  multiply by negative
+                                                    # (-spill + recapture - Seat_f <= -Qf)  
+
+        model.flight_interaction_constraints = pe.ConstraintList()
+        counter = 0
+        
+        self.F_I_I_matrix_recapture_summation = self.F_I_I_matrix_recapture_summation.replace(0,'')
+
+        for flight in self.Flight_Schedule.index:
+            spill_demand = sum(model.t[f"{var}"]*-1 for var in self.F_I_I_matrix_summation.iloc[flight].split(" + "))
+            if self.F_I_I_matrix_recapture_summation.iloc[flight] != '':
+                recapture_demand = sum(model.t[f"{var}"]*self.F_I_I_matrix_recapture_summation_probability.iloc[flight] for var in [self.F_I_I_matrix_recapture_summation.iloc[flight]])
+            else:
+                recapture_demand = 0
+            
+            seat_f = sum(model.x[f"X{flight+1}_{fleet+1}"]*-self.fleets_capacity[fleet] for fleet in self.fleets.index)
+            
+            
+            flight_interaction_sum = sum([recapture_demand, spill_demand, seat_f])
+            model.flight_interaction_constraints.add(expr= flight_interaction_sum   <= -self.Unconstrained_Demand_Qf[flight])
+
+        # Objective_Function
+        
+        # Minimize Cost ----> C+(S-M) 
+
+        #---> Operational Costs (C)
+        new_dict = {}
+        for flight in self.Flight_Schedule.index:
+                for fleet in self.fleets.index:
+                    new_dict[f"X{flight+1}_{fleet+1}"] = self.Flight_Schedule.loc[flight, f"e{fleet+1}"] 
+
+        operational_costs = sum(model.x[f"{key}"]*value for key, value in new_dict.items())
+
+        #---> Spilled Costs (S)
+        new_dict = {}
+        for Itenary in self.Itenaries.index:
+            for var in self.I_I_matrix_summation.iloc[Itenary].split(" + "):
+                new_dict[var] = self.Itenaries.loc[Itenary, "Fare"]
+        
+        spilled_costs =sum(model.t[f"{key}"]*value for key, value in new_dict.items())
+
+        #---> Recaptured Costs/Revenue (M)
+        new_dict = {}
+        for Itenary in self.Itenaries.index:
+            for var in self.I_I_matrix_recapture_summation.iloc[Itenary].split(" + "):
+                if var != '' and var != 0:
+                    new_dict[var] = self.Itenaries.loc[Itenary, "Fare"]*self.I_I_matrix_recapture_summation_probability.iloc[Itenary]
+                    
+        
+        recaptured_costs =sum(model.t[f"{key}"]*-value for key, value in new_dict.items())
+
+        #---> Unconstrained revenue (R) R = fare*flight demand
+        counter = 0
+        self.Flight_Schedule["Fare"] = 0
+        for flight_Demand in self.Unconstrained_Demand_Qf:
+            self.Flight_Schedule.loc[counter, "Fare"] = self.Itenaries.loc[counter, "Fare"]
+            counter += 1
+
+        self.Unconstrained_Revenue = 0
+        for flight in self.Flight_Schedule.index:
+            self.Unconstrained_Revenue += self.Flight_Schedule.loc[flight, "Fare"] * self.Flight_Schedule.loc[flight, "Demand"]
+
+        
+        objective_fun = sum([operational_costs, spilled_costs, recaptured_costs])
+
+        model.objective = pe.Objective(sense = pe.minimize, expr = objective_fun)
+
+        # model.pprint()
+
+
+        solver = po.SolverFactory("gurobi")     
+        results = solver.solve(model, tee=False)
+
+        print("##################################################")
+        print("##                     iFAM                     ##")
+        print("##################################################")
+        print(f"Maxium Profit (iFAM) : {self.Unconstrained_Revenue - pe.value(model.objective)}")
+        print(f"Minimum Cost  (iFAM) : {pe.value(model.objective)}")
+
+        for var in model.x:
+            print(f"{var} : {pe.value(model.x[f"{var}"])}")
+
+        for var in model.RON:
+            print(f"{var} : {pe.value(model.RON[f"{var}"])}")
+
+        for var in model.y:
+            print(f"{var} : {pe.value(model.y[f"{var}"])}")
+
+        # for var in model.t:
+        #     try: 
+        #         print(f"{var} : {pe.value(model.t[f"{var}"])}")
+        #     except:
+        #         print(f"{var} : 0")
+
+                                             #       Retuen Outputs      #      
     def run_analysis_iFAM(self):
 
         self.save_folder = "iFAM"
         self.read_flight_schedule()
         self.read_fleets()
         self.read_Itenaries()
+        self.read_probability()
         self.identify_stations()
         self.create_nodes()
         self.constraints_matrices()
@@ -780,6 +1092,9 @@ class iFAM(FAM):
         self.Flight_Interaction_constraints()
         self.Demand_constraints()
         self.Objective_Function()
-        self.optimize_iFAM()
+        self.Create_FAM_constraints()
+        self.Create_iFAM_constraints()
+        self.check_optional_flights()
+        self.optimize_iFAM_pyomo()
     
         
