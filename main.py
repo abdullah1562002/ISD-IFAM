@@ -1,4 +1,5 @@
 import FAM
+import iFAM
 import pandas as pd
 import warnings
 
@@ -14,7 +15,7 @@ analyzer_FAM = FAM.FAM("ISD_Project_Data.xlsx")
 analyzer_FAM.run_analysis_FAM()
 
 # Create an instance of the class
-analyzer_iFAM = FAM.iFAM("ISD_Project_Data.xlsx")
+analyzer_iFAM = iFAM.iFAM("ISD_Project_Data.xlsx")
 
 # Perform operations
 analyzer_iFAM.run_analysis_iFAM()
