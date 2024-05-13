@@ -27,9 +27,6 @@ import openpyxl
 class FAM:
     def __init__(self, excel_file):
         self.excel_file = excel_file
-        self.Flight_Schedule = pd.DataFrame()
-        self.fleets = pd.DataFrame()
-        self.Itenaries = pd.DataFrame()
         self.Stations = []
         self.Nodes = []
         self.ground_links = []
@@ -54,17 +51,17 @@ class FAM:
 
                                                     #  Read Flight Secdule #
     def read_flight_schedule(self):
-        self.Flight_Schedule = pd.DataFrame(pd.read_excel(self.excel_file, sheet_name="Flights", index_col=None, engine="openpyxl"))
+        self.Flight_Schedule = pd.read_excel(self.excel_file, sheet_name="Flights", index_col=None, engine="openpyxl")
         self.Number_Flights = len(self.Flight_Schedule)
     
                                                     #  Read Fleets Data   #
     def read_fleets(self):
-        self.fleets = pd.DataFrame(pd.read_excel(self.excel_file, sheet_name="Fleets", index_col=None, engine="openpyxl"))
+        self.fleets = pd.read_excel(self.excel_file, sheet_name="Fleets", index_col=None, engine="openpyxl")
         self.Number_fleets = len(self.fleets)
 
                                                     #  Read Itenaries Data   #
     def read_Itenaries(self):
-        self.Itenaries = pd.DataFrame(pd.read_excel(self.excel_file, sheet_name="Itenaries", index_col=None, engine="openpyxl"))
+        self.Itenaries = pd.read_excel(self.excel_file, sheet_name="Itenaries", index_col=None, engine="openpyxl")
         self.Number_Itenaries = len(self.Itenaries)
         
         

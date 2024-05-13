@@ -13,9 +13,6 @@ class ISD_iFAM(FAM, iFAM):
     
     def __init__(self, excel_file):
         self.excel_file = excel_file
-        self.Flight_Schedule = pd.DataFrame()
-        self.fleets = pd.DataFrame()
-        self.Itenaries = pd.DataFrame()
         self.Stations = []
         self.Nodes = []
         self.ground_links = []

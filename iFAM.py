@@ -12,9 +12,6 @@ from FAM import FAM
 class iFAM(FAM):
     def __init__(self, excel_file):
         self.excel_file = excel_file
-        self.Flight_Schedule = pd.DataFrame()
-        self.fleets = pd.DataFrame()
-        self.Itenaries = pd.DataFrame()
         self.Stations = []
         self.Nodes = []
         self.ground_links = []
@@ -51,7 +48,7 @@ class iFAM(FAM):
         self.Flights_var = [f"F{F_No+1}" for F_No in range(len(self.Flight_Schedule.index))]
         self.flight_itenary_incidence_Matrix = pd.DataFrame(columns = self.Itenaries_var)
         
-        # Flight Itenary Incidence Matrix
+        # Create Flight Itenary Incidence Matrix
         new_row = {}
         for flight in self.Flight_Schedule["flight number"]:
             for Itenary in self.Itenaries.index:
@@ -61,6 +58,7 @@ class iFAM(FAM):
             new_row.clear()
 
         self.flight_itenary_incidence_Matrix.index = self.Flights_var
+        self.flight_itenary_incidence_Matrix.to_csv(f"Outputs/{self.save_folder}/Flight_Itenary_Incidence_Matrix_{self.save_folder}.csv")
 
         self.passenger_Demand = np.array(self.Itenaries["Passenger Demand"])
         self.Unconstrained_Demand_Qf = np.matmul(self.flight_itenary_incidence_Matrix.to_numpy() , self.passenger_Demand)
@@ -96,7 +94,7 @@ class iFAM(FAM):
             for itenary_2 in range(len(self.Itenaries)+1):
                     if itenary_2 < len(self.Itenaries):
                         check_Itenary = list(self.Itenaries["Itenary"][itenary_2].split("-"))
-                        if  itenary_1 != itenary_2 and ref_Itenary[0] == check_Itenary[0] and ref_Itenary[-1] == check_Itenary[-1] and  len(ref_Itenary) <= 2:
+                        if  itenary_1 != itenary_2 and ref_Itenary[0] == check_Itenary[0] and ref_Itenary[-1] == check_Itenary[-1] and  len(ref_Itenary) <= len(check_Itenary):
                             new_row[f"I{itenary_2 + 1}"] = f"t({itenary_1 + 1},{itenary_2 + 1})"
                         else:
                             new_row[f"I{len(self.Itenaries_var)+1}"] = f"t({itenary_1 + 1},{len(self.Itenaries_var)+1})"
@@ -108,6 +106,9 @@ class iFAM(FAM):
             
             self.itenary_itenary_spill_recapture_Matrix = self.itenary_itenary_spill_recapture_Matrix._append(new_row, ignore_index=True).fillna(0)
             new_row.clear()
+
+        self.itenary_itenary_spill_recapture_Matrix.index = self.Itenaries_var
+        self.itenary_itenary_spill_recapture_Matrix.to_csv(f"Outputs/{self.save_folder}/Itenary_Itenary_Incidence_Matrix_{self.save_folder}.csv")
         
         # spill recapture variables bounds
         self.spill_recapture_variables_bounds = [(0,None) for i in self.spill_recapture_variables]
@@ -117,7 +118,7 @@ class iFAM(FAM):
         # Take Summation of each Inteary row (symbolic)    
         self.I_I_matrix_summation = pd.Series()
         for Itenary in self.itenary_itenary_spill_recapture_Matrix.index:
-            new_list = self.itenary_itenary_spill_recapture_Matrix.iloc[Itenary]
+            new_list = self.itenary_itenary_spill_recapture_Matrix.loc[Itenary]
             row_sum  = [variable for variable in new_list if variable != 0]
             row_sum = " + ".join(row_sum)
 
