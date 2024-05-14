@@ -1,0 +1,174 @@
+5 Var Declarations
+    RON : Size=6, Index={RON_LAX_1, RON_ORD_1, RON_BOS_1, RON_LAX_2, RON_ORD_2, RON_BOS_2}
+        Key       : Lower : Value : Upper : Fixed : Stale : Domain
+        RON_BOS_1 :     0 :  None :  None : False :  True : NonNegativeIntegers
+        RON_BOS_2 :     0 :  None :  None : False :  True : NonNegativeIntegers
+        RON_LAX_1 :     0 :  None :  None : False :  True : NonNegativeIntegers
+        RON_LAX_2 :     0 :  None :  None : False :  True : NonNegativeIntegers
+        RON_ORD_1 :     0 :  None :  None : False :  True : NonNegativeIntegers
+        RON_ORD_2 :     0 :  None :  None : False :  True : NonNegativeIntegers
+    t : Size=72, Index={t(1,1), t(1,2), t(1,3), t(1,4), t(1,5), t(1,6), t(1,7), t(1,8), t(1,9), t(2,1), t(2,2), t(2,3), t(2,4), t(2,5), t(2,6), t(2,7), t(2,8), t(2,9), t(3,1), t(3,2), t(3,3), t(3,4), t(3,5), t(3,6), t(3,7), t(3,8), t(3,9), t(4,1), t(4,2), t(4,3), t(4,4), t(4,5), t(4,6), t(4,7), t(4,8), t(4,9), t(5,1), t(5,2), t(5,3), t(5,4), t(5,5), t(5,6), t(5,7), t(5,8), t(5,9), t(6,1), t(6,2), t(6,3), t(6,4), t(6,5), t(6,6), t(6,7), t(6,8), t(6,9), t(7,1), t(7,2), t(7,3), t(7,4), t(7,5), t(7,6), t(7,7), t(7,8), t(7,9), t(8,1), t(8,2), t(8,3), t(8,4), t(8,5), t(8,6), t(8,7), t(8,8), t(8,9)}
+        Key    : Lower : Value : Upper : Fixed : Stale : Domain
+        t(1,1) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(1,2) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(1,3) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(1,4) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(1,5) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(1,6) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(1,7) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(1,8) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(1,9) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(2,1) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(2,2) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(2,3) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(2,4) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(2,5) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(2,6) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(2,7) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(2,8) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(2,9) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(3,1) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(3,2) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(3,3) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(3,4) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(3,5) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(3,6) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(3,7) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(3,8) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(3,9) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(4,1) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(4,2) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(4,3) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(4,4) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(4,5) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(4,6) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(4,7) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(4,8) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(4,9) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(5,1) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(5,2) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(5,3) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(5,4) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(5,5) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(5,6) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(5,7) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(5,8) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(5,9) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(6,1) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(6,2) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(6,3) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(6,4) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(6,5) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(6,6) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(6,7) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(6,8) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(6,9) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(7,1) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(7,2) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(7,3) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(7,4) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(7,5) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(7,6) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(7,7) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(7,8) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(7,9) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(8,1) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(8,2) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(8,3) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(8,4) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(8,5) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(8,6) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(8,7) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(8,8) :     0 :  None :  None : False :  True : NonNegativeIntegers
+        t(8,9) :     0 :  None :  None : False :  True : NonNegativeIntegers
+    x : Size=12, Index={X1_1, X1_2, X2_1, X2_2, X3_1, X3_2, X4_1, X4_2, X5_1, X5_2, X6_1, X6_2}
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        X1_1 :     0 :  None :     1 : False :  True : Binary
+        X1_2 :     0 :  None :     1 : False :  True : Binary
+        X2_1 :     0 :  None :     1 : False :  True : Binary
+        X2_2 :     0 :  None :     1 : False :  True : Binary
+        X3_1 :     0 :  None :     1 : False :  True : Binary
+        X3_2 :     0 :  None :     1 : False :  True : Binary
+        X4_1 :     0 :  None :     1 : False :  True : Binary
+        X4_2 :     0 :  None :     1 : False :  True : Binary
+        X5_1 :     0 :  None :     1 : False :  True : Binary
+        X5_2 :     0 :  None :     1 : False :  True : Binary
+        X6_1 :     0 :  None :     1 : False :  True : Binary
+        X6_2 :     0 :  None :     1 : False :  True : Binary
+    y : Size=4, Index={y(1-2)_1, y(1-2)_2, y(3-4)_1, y(3-4)_2}
+        Key      : Lower : Value : Upper : Fixed : Stale : Domain
+        y(1-2)_1 :     0 :  None :  None : False :  True : NonNegativeIntegers
+        y(1-2)_2 :     0 :  None :  None : False :  True : NonNegativeIntegers
+        y(3-4)_1 :     0 :  None :  None : False :  True : NonNegativeIntegers
+        y(3-4)_2 :     0 :  None :  None : False :  True : NonNegativeIntegers
+    z : Size=4, Index={Z_2, Z_4, Z_7, Z_8}
+        Key : Lower : Value : Upper : Fixed : Stale : Domain
+        Z_2 :     0 :  None :     1 : False :  True : Binary
+        Z_4 :     0 :  None :     1 : False :  True : Binary
+        Z_7 :     0 :  None :     1 : False :  True : Binary
+        Z_8 :     0 :  None :     1 : False :  True : Binary
+
+1 Objective Declarations
+    objective : Size=1, Index=None, Active=True
+        Key  : Active : Sense    : Expression
+        None :   True : minimize : (1 - z[Z_2])*17025 + (1 - z[Z_4])*2425 + (1 - z[Z_7])*4600 + (1 - z[Z_8])*4625 + (30000*x[X1_1] + 16600*x[X1_2] + 15100*x[X2_1] + 13500*x[X2_2] + 15500*x[X3_1] + 45000*x[X3_2] + 57000*x[X4_1] + 13500*x[X4_2] + 42000*x[X5_1] + 16600*x[X5_2] + 15500*x[X6_1] + 45000*x[X6_2] + 200*t['t(1,9)'] + 225*t['t(2,9)'] + 350*t['t(3,7)'] + 350*t['t(3,9)'] + 225*t['t(4,9)'] + 200*t['t(5,9)'] + 350*t['t(6,8)'] + 350*t['t(6,9)'] + 300*t['t(7,9)'] + 300*t['t(8,9)'] - 300*t['t(3,7)'] - 300*t['t(6,8)'])
+
+7 Constraint Declarations
+    Zq_First_constraint : Size=6, Index={1, 2, 3, 4, 5, 6}, Active=True
+        Key : Lower : Body                         : Upper : Active
+          1 :  -Inf : - x[X2_1] - x[X2_2] + z[Z_2] :   0.0 :   True
+          2 :  -Inf : - x[X4_1] - x[X4_2] + z[Z_4] :   0.0 :   True
+          3 :  -Inf : - x[X1_1] - x[X1_2] + z[Z_7] :   0.0 :   True
+          4 :  -Inf : - x[X2_1] - x[X2_2] + z[Z_7] :   0.0 :   True
+          5 :  -Inf : - x[X4_1] - x[X4_2] + z[Z_8] :   0.0 :   True
+          6 :  -Inf : - x[X5_1] - x[X5_2] + z[Z_8] :   0.0 :   True
+    Zq_Second_constraint : Size=4, Index={1, 2, 3, 4}, Active=True
+        Key : Lower : Body                                           : Upper : Active
+          1 :  -Inf :                     x[X2_1] + x[X2_2] - z[Z_2] :   0.0 :   True
+          2 :  -Inf :                     x[X4_1] + x[X4_2] - z[Z_4] :   0.0 :   True
+          3 :  -Inf : x[X1_1] + x[X1_2] + x[X2_1] + x[X2_2] - z[Z_7] :   1.0 :   True
+          4 :  -Inf : x[X4_1] + x[X4_2] + x[X5_1] + x[X5_2] - z[Z_8] :   1.0 :   True
+    balance_constraints : Size=10, Index={1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, Active=True
+        Key : Lower : Body                                                   : Upper : Active
+          1 :   0.0 :   - x[X1_1] - x[X3_1] + RON[RON_LAX_1] - y['y(1-2)_1'] :   0.0 :   True
+          2 :   0.0 :   - x[X1_2] - x[X3_2] + RON[RON_LAX_2] - y['y(1-2)_2'] :   0.0 :   True
+          3 :   0.0 :     x[X5_1] + x[X6_1] - RON[RON_LAX_1] + y['y(1-2)_1'] :   0.0 :   True
+          4 :   0.0 :     x[X5_2] + x[X6_2] - RON[RON_LAX_2] + y['y(1-2)_2'] :   0.0 :   True
+          5 :   0.0 :     x[X1_1] - x[X2_1] + RON[RON_ORD_1] - y['y(3-4)_1'] :   0.0 :   True
+          6 :   0.0 :     x[X1_2] - x[X2_2] + RON[RON_ORD_2] - y['y(3-4)_2'] :   0.0 :   True
+          7 :   0.0 :     x[X4_1] - x[X5_1] - RON[RON_ORD_1] + y['y(3-4)_1'] :   0.0 :   True
+          8 :   0.0 :     x[X4_2] - x[X5_2] - RON[RON_ORD_2] + y['y(3-4)_2'] :   0.0 :   True
+          9 :   0.0 : x[X2_1] + x[X3_1] - x[X4_1] - x[X6_1] - RON[RON_BOS_1] :   0.0 :   True
+         10 :   0.0 : x[X2_2] + x[X3_2] - x[X4_2] - x[X6_2] - RON[RON_BOS_2] :   0.0 :   True
+    coverage_constraints : Size=6, Index={1, 2, 3, 4, 5, 6}, Active=True
+        Key : Lower : Body              : Upper : Active
+          1 :   1.0 : x[X1_1] + x[X1_2] :   1.0 :   True
+          2 :  -Inf : x[X2_1] + x[X2_2] :   1.0 :   True
+          3 :   1.0 : x[X3_1] + x[X3_2] :   1.0 :   True
+          4 :  -Inf : x[X4_1] + x[X4_2] :   1.0 :   True
+          5 :   1.0 : x[X5_1] + x[X5_2] :   1.0 :   True
+          6 :   1.0 : x[X6_1] + x[X6_2] :   1.0 :   True
+    flight_interaction_constraints : Size=6, Index={1, 2, 3, 4, 5, 6}, Active=True
+        Key : Lower : Body                                                                                                                                                                                                                 : Upper  : Active
+          1 :  -Inf : 6*(1 - z[Z_2]) - 11*(1 - z[Z_4]) + 27*(1 - z[Z_7]) - 15*(1 - z[Z_8]) + 0*(1 - z[Z_2]) + 33*(1 - z[Z_4]) + 0*(1 - z[Z_7]) + 48*(1 - z[Z_8]) + (- t['t(1,9)'] - t['t(7,9)'] + t['t(3,7)'] - 150*x[X1_1] - 250*x[X1_2]) : -100.0 :   True
+          2 :  -Inf :  0*(1 - z[Z_2]) + 19*(1 - z[Z_4]) + 0*(1 - z[Z_7]) + 21*(1 - z[Z_8]) + 0*(1 - z[Z_2]) + 33*(1 - z[Z_4]) + 0*(1 - z[Z_7]) + 48*(1 - z[Z_8]) + (- t['t(2,9)'] - t['t(7,9)'] + t['t(3,7)'] - 150*x[X2_1] - 250*x[X2_2]) : -100.0 :   True
+          3 :  -Inf :                                                                                      -5*(1 - z[Z_2]) - 8*(1 - z[Z_4]) - 6*(1 - z[Z_7]) - 24*(1 - z[Z_8]) + (- t['t(3,7)'] - t['t(3,9)'] - 150*x[X3_1] - 250*x[X3_2]) : -300.0 :   True
+          4 :  -Inf :   37*(1 - z[Z_2]) + 0*(1 - z[Z_4]) - 2*(1 - z[Z_7]) + 0*(1 - z[Z_8]) - 17*(1 - z[Z_2]) + 0*(1 - z[Z_4]) + 25*(1 - z[Z_7]) + 0*(1 - z[Z_8]) + (- t['t(4,9)'] - t['t(8,9)'] + t['t(6,8)'] - 150*x[X4_1] - 250*x[X4_2]) : -100.0 :   True
+          5 :  -Inf :  5*(1 - z[Z_2]) + 0*(1 - z[Z_4]) + 16*(1 - z[Z_7]) + 22*(1 - z[Z_8]) - 17*(1 - z[Z_2]) + 0*(1 - z[Z_4]) + 25*(1 - z[Z_7]) + 0*(1 - z[Z_8]) + (- t['t(5,9)'] - t['t(8,9)'] + t['t(6,8)'] - 150*x[X5_1] - 250*x[X5_2]) : -100.0 :   True
+          6 :  -Inf :                                                                                        -27*(1 - z[Z_2]) - (1 - z[Z_4]) - 9*(1 - z[Z_7]) - 5*(1 - z[Z_8]) + (- t['t(6,8)'] - t['t(6,9)'] - 150*x[X6_1] - 250*x[X6_2]) : -300.0 :   True
+    resource_constraints : Size=2, Index={1, 2}, Active=True
+        Key : Lower : Body                                             : Upper : Active
+          1 :  -Inf : RON[RON_LAX_1] + RON[RON_ORD_1] + RON[RON_BOS_1] :   2.0 :   True
+          2 :  -Inf : RON[RON_LAX_2] + RON[RON_ORD_2] + RON[RON_BOS_2] :   1.0 :   True
+    spill_recapture_Demand_constraints : Size=8, Index={1, 2, 3, 4, 5, 6, 7, 8}, Active=True
+        Key : Lower : Body                                                                                             : Upper : Active
+          1 :  -Inf :              -6*(1 - z[Z_2]) + 11*(1 - z[Z_4]) - 27*(1 - z[Z_7]) + 15*(1 - z[Z_8]) + t['t(1,9)'] :  50.0 :   True
+          2 :  -Inf :                0*(1 - z[Z_2]) - 19*(1 - z[Z_4]) + 0*(1 - z[Z_7]) - 21*(1 - z[Z_8]) + t['t(2,9)'] :  50.0 :   True
+          3 :  -Inf : 5*(1 - z[Z_2]) + 8*(1 - z[Z_4]) + 6*(1 - z[Z_7]) + 24*(1 - z[Z_8]) + (t['t(3,7)'] + t['t(3,9)']) : 300.0 :   True
+          4 :  -Inf :                -37*(1 - z[Z_2]) + 0*(1 - z[Z_4]) + 2*(1 - z[Z_7]) + 0*(1 - z[Z_8]) + t['t(4,9)'] :  50.0 :   True
+          5 :  -Inf :               -5*(1 - z[Z_2]) + 0*(1 - z[Z_4]) - 16*(1 - z[Z_7]) - 22*(1 - z[Z_8]) + t['t(5,9)'] :  50.0 :   True
+          6 :  -Inf :   27*(1 - z[Z_2]) + (1 - z[Z_4]) + 9*(1 - z[Z_7]) + 5*(1 - z[Z_8]) + (t['t(6,8)'] + t['t(6,9)']) : 300.0 :   True
+          7 :  -Inf :                0*(1 - z[Z_2]) - 33*(1 - z[Z_4]) + 0*(1 - z[Z_7]) - 48*(1 - z[Z_8]) + t['t(7,9)'] :  50.0 :   True
+          8 :  -Inf :                17*(1 - z[Z_2]) + 0*(1 - z[Z_4]) - 25*(1 - z[Z_7]) + 0*(1 - z[Z_8]) + t['t(8,9)'] :  50.0 :   True
+
+13 Declarations: x RON y t z coverage_constraints resource_constraints balance_constraints spill_recapture_Demand_constraints flight_interaction_constraints Zq_First_constraint Zq_Second_constraint objective

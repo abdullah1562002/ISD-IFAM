@@ -52,6 +52,7 @@ class FAM:
                                                     #  Read Flight Secdule #
     def read_flight_schedule(self):
         self.Flight_Schedule = pd.read_excel(self.excel_file, sheet_name="Flights", index_col=None, engine="openpyxl")
+        self.Optional_Flights = pd.read_excel(self.excel_file, sheet_name="Optional_Flights", index_col=None, engine="openpyxl")
         self.Number_Flights = len(self.Flight_Schedule)
     
                                                     #  Read Fleets Data   #
@@ -305,7 +306,6 @@ class FAM:
         workbook = openpyxl.load_workbook(self.excel_file)
         sheet_name = "Optional_Flights"
         if sheet_name in workbook.sheetnames:
-            self.Optional_Flights = pd.read_excel(self.excel_file, sheet_name=sheet_name, index_col=None, engine="openpyxl")
             if len(self.Optional_Flights) != 0:
                 self.indices_to_remove = []
                 for Flight in self.Optional_Flights["flight number"]:
